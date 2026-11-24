@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SummarizeBuddy</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="dot"></span>
+        SummarizeBuddy
+      </div>
+      <div class="header-actions">
+        <button id="refresh" class="ghost" title="Re-read the current page">Reload</button>
+        <button id="settings" class="ghost" title="Open settings">Settings</button>
+      </div>
+    </header>
+
+    <section class="page-info">
+      <div id="pageTitle" class="page-title">Reading page…</div>
+      <div id="pageMeta" class="page-meta"></div>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section class="toolbar">
+      <button id="summarize" class="primary">Summarize page</button>
+      <button id="clear" class="ghost">Clear chat</button>
+    </section>
+
+    <main id="chat" class="chat" aria-live="polite"></main>
+
+    <footer>
+      <textarea id="input" rows="1" placeholder="Ask about this page…"></textarea>
+      <button id="send" class="primary">Send</button>
+    </footer>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
