@@ -15,6 +15,9 @@
       <div class="header-actions">
         <button id="refresh" class="ghost" title="Re-read the current page">Reload</button>
         <button id="settings" class="ghost" title="Open settings">Settings</button>
+        <button id="menuBtn" class="ghost burger-btn" title="Open menu" aria-label="Open menu">
+          <span class="burger"></span>
+        </button>
       </div>
     </header>
 
@@ -42,8 +45,112 @@
       </div>
     </section>
 
+    <div id="menuOverlay" class="overlay" hidden>
+      <aside class="drawer" role="dialog" aria-label="Menu">
+        <div class="panel-head">
+          <strong>Menu</strong>
+          <button id="closeMenu" class="ghost" type="button">Close</button>
+        </div>
+        <nav class="drawer-nav">
+          <button id="menuSettings" class="drawer-item" type="button">Settings</button>
+          <button id="menuChats" class="drawer-item" type="button">All chats</button>
+        </nav>
+      </aside>
+    </div>
+
+    <div id="settingsModal" class="overlay" hidden>
+      <div class="modal" role="dialog" aria-label="Settings">
+        <div class="panel-head">
+          <strong>Settings</strong>
+          <button id="closeSettings" class="ghost" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <section class="setting-group">
+            <h3>Import .env</h3>
+            <p class="hint">
+              Paste your .env contents or load the file. Supported keys: ADAPTION_*,
+              OPENROUTER_API_KEY_N, NVIDIA_*, AI_REQUEST_TIMEOUT_MS.
+            </p>
+            <div class="row">
+              <input id="envFile" type="file" accept=".env,.txt,text/plain" />
+              <button id="applyEnv" type="button">Apply pasted .env</button>
+            </div>
+            <textarea
+              id="envText"
+              rows="4"
+              spellcheck="false"
+              placeholder="ADAPTION_API_KEY=...&#10;OPENROUTER_API_KEY_1=sk-or-v1-...&#10;NVIDIA_API_KEY=nvapi-..."
+            ></textarea>
+            <div id="envStatus" class="hint"></div>
+          </section>
+
+          <section class="setting-group">
+            <h3>Provider</h3>
+            <label>
+              Provider
+              <select id="provider">
+                <option value="adaption">Adaption</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="nvidia">NVIDIA NIM</option>
+                <option value="custom">Custom (OpenAI-compatible)</option>
+              </select>
+            </label>
+            <label>
+              Base URL
+              <input id="baseUrl" type="text" spellcheck="false" />
+            </label>
+            <label>
+              Model
+              <input id="model" type="text" spellcheck="false" />
+            </label>
+            <div class="grid">
+              <label>
+                Temperature
+                <input id="temperature" type="number" min="0" max="2" step="0.1" />
+              </label>
+              <label>
+                Max output tokens
+                <input id="maxTokens" type="number" min="64" step="64" />
+              </label>
+              <label>
+                Timeout (ms)
+                <input id="timeoutMs" type="number" min="1000" step="1000" />
+              </label>
+              <label>
+                Max page chars
+                <input id="maxChars" type="number" min="1000" step="1000" />
+              </label>
+            </div>
+          </section>
+
+          <section class="setting-group">
+            <h3>API keys</h3>
+            <label>
+              Adaption API key
+              <input id="adaptionKey" type="password" autocomplete="off" spellcheck="false" />
+            </label>
+            <label>
+              NVIDIA API key
+              <input id="nvidiaKey" type="password" autocomplete="off" spellcheck="false" />
+            </label>
+            <label>
+              OpenRouter keys (one per line, rotated per request)
+              <textarea id="openrouterKeys" rows="3" spellcheck="false"></textarea>
+            </label>
+          </section>
+        </div>
+        <div class="panel-foot">
+          <button id="saveSettings" class="primary" type="button">Save</button>
+          <button id="testConnection" type="button">Test</button>
+          <button id="resetSettings" type="button">Reset</button>
+          <span id="settingsStatus" class="status"></span>
+        </div>
+      </div>
+    </div>
+
     <div id="toast" class="toast" hidden></div>
 
+    <script src="settings-core.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>

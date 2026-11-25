@@ -17,18 +17,11 @@ const SUMMARIZE_CHAT_PROMPT =
   "Give a short TL;DR and the key points we have covered.";
 
 function providerLabel() {
-  if (!settings) return "";
-  const name = settings.provider || "custom";
-  return name.charAt(0).toUpperCase() + name.slice(1) + " · " + (settings.model || "no model");
+  return SB.providerLabel(settings);
 }
 
 function hasKey() {
-  if (!settings) return false;
-  const keys = settings.keys || {};
-  if (settings.provider === "openrouter") {
-    return (keys.openrouter || []).some(Boolean);
-  }
-  return Boolean(keys[settings.provider]);
+  return SB.hasKey(settings);
 }
 
 function showToast(text, kind) {
@@ -43,9 +36,7 @@ function showToast(text, kind) {
 }
 
 async function loadSettings() {
-  const stored = await chrome.storage.local.get("settings");
-  settings = { maxChars: 12000, provider: "adaption", ...(stored.settings || {}) };
-  settings.keys = stored.settings && stored.settings.keys ? stored.settings.keys : {};
+  settings = await SB.loadSettings();
   el("status").textContent = providerLabel();
   el("status").classList.toggle("warn", !hasKey());
   if (!hasKey()) {
@@ -365,6 +356,148 @@ function autoGrow() {
   input.style.height = Math.min(input.scrollHeight, 140) + "px";
 }
 
+function openOverlay(id) {
+  el(id).hidden = false;
+}
+
+function closeOverlay(id) {
+  el(id).hidden = true;
+}
+
+function setSettingsStatus(text, kind) {
+  const node = el("settingsStatus");
+  node.textContent = text;
+  node.className = "status" + (kind ? " " + kind : "");
+}
+
+function fillSettingsForm() {
+  if (!settings) return;
+  el("provider").value = settings.provider || SB.DEFAULTS.provider;
+  el("baseUrl").value = settings.baseUrl || "";
+  el("model").value = settings.model || "";
+  el("temperature").value = String(settings.temperature ?? SB.DEFAULTS.temperature);
+  el("maxTokens").value = String(settings.maxTokens ?? SB.DEFAULTS.maxTokens);
+  el("timeoutMs").value = String(settings.timeoutMs ?? SB.DEFAULTS.timeoutMs);
+  el("maxChars").value = String(settings.maxChars ?? SB.DEFAULTS.maxChars);
+  const keys = settings.keys || {};
+  el("adaptionKey").value = keys.adaption || "";
+  el("nvidiaKey").value = keys.nvidia || "";
+  el("openrouterKeys").value = (keys.openrouter || []).join("\n");
+}
+
+function readSettingsForm() {
+  const openrouter = el("openrouterKeys")
+    .value.split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return {
+    ...(settings || {}),
+    provider: el("provider").value,
+    baseUrl: el("baseUrl").value.trim(),
+    model: el("model").value.trim(),
+    temperature: Number(el("temperature").value),
+    maxTokens: Number(el("maxTokens").value),
+    timeoutMs: Number(el("timeoutMs").value),
+    maxChars: Number(el("maxChars").value),
+    keys: {
+      ...((settings && settings.keys) || {}),
+      adaption: el("adaptionKey").value.trim(),
+      nvidia: el("nvidiaKey").value.trim(),
+      openrouter
+    }
+  };
+}
+
+async function saveSettingsForm(notify) {
+  if (!settings) settings = await SB.loadSettings();
+  const next = readSettingsForm();
+  await SB.saveSettings(next);
+  settings = next;
+  await loadSettings();
+  if (notify) {
+    setSettingsStatus("Saved", "ok");
+    showToast("Settings saved", "ok");
+  }
+}
+
+function useProviderDefaults() {
+  const defaults = SB.PROVIDER_DEFAULTS[el("provider").value];
+  if (!defaults) return;
+  el("baseUrl").value = defaults.baseUrl || "";
+  el("model").value = defaults.model || "";
+}
+
+function applyEnvText(text) {
+  const env = SB.parseEnv(text);
+  let count = 0;
+
+  if (env.ADAPTION_API_KEY) {
+    el("adaptionKey").value = env.ADAPTION_API_KEY;
+    count++;
+  }
+  if (env.NVIDIA_API_KEY) {
+    el("nvidiaKey").value = env.NVIDIA_API_KEY;
+    count++;
+  }
+  const openrouterKeys = SB.collectOpenRouterKeys(env);
+  if (openrouterKeys.length) {
+    el("openrouterKeys").value = openrouterKeys.join("\n");
+    count++;
+  }
+
+  const provider = el("provider").value;
+  if (provider === "adaption") {
+    if (env.ADAPTION_BASE_URL) el("baseUrl").value = env.ADAPTION_BASE_URL;
+    if (env.ADAPTION_MODEL) el("model").value = env.ADAPTION_MODEL;
+  }
+  if (provider === "nvidia" && env.NVIDIA_MODEL) {
+    el("model").value = env.NVIDIA_MODEL;
+  }
+  if (env.AI_REQUEST_TIMEOUT_MS) {
+    const timeout = parseInt(env.AI_REQUEST_TIMEOUT_MS, 10);
+    if (timeout > 0) el("timeoutMs").value = String(timeout);
+  }
+
+  return count;
+}
+
+async function testConnection() {
+  const button = el("testConnection");
+  button.disabled = true;
+  setSettingsStatus("Testing…");
+  try {
+    await saveSettingsForm(false);
+    const response = await chrome.runtime.sendMessage({ type: "test" });
+    if (!response || !response.ok) {
+      throw new Error((response && response.error) || "Test failed.");
+    }
+    setSettingsStatus("OK: " + response.content, "ok");
+  } catch (error) {
+    setSettingsStatus(error.message || String(error), "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function resetSettings() {
+  const confirmed = confirm("Remove all saved settings and API keys?");
+  if (!confirmed) return;
+  await chrome.storage.local.remove("settings");
+  settings = await SB.loadSettings();
+  fillSettingsForm();
+  await loadSettings();
+  setSettingsStatus("Reset to defaults", "ok");
+}
+
+async function openSettings() {
+  if (!settings) await loadSettings();
+  fillSettingsForm();
+  setSettingsStatus("");
+  closeOverlay("menuOverlay");
+  openOverlay("settingsModal");
+}
+
 function init() {
   el("summarize").addEventListener("click", () => send(SUMMARIZE_PROMPT));
   el("summarizeChat").addEventListener("click", summarizeChat);
@@ -375,7 +508,62 @@ function init() {
     await refreshPage();
     await loadSettings();
   });
-  el("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
+  el("settings").addEventListener("click", openSettings);
+  el("menuBtn").addEventListener("click", () => openOverlay("menuOverlay"));
+  el("closeMenu").addEventListener("click", () => closeOverlay("menuOverlay"));
+  el("menuSettings").addEventListener("click", openSettings);
+  el("menuChats").addEventListener("click", () => {
+    closeOverlay("menuOverlay");
+    showToast("All chats is not available yet.");
+  });
+  el("closeSettings").addEventListener("click", () => closeOverlay("settingsModal"));
+  el("provider").addEventListener("change", useProviderDefaults);
+  el("saveSettings").addEventListener("click", () => {
+    saveSettingsForm(true).catch((error) => setSettingsStatus(error.message || String(error), "error"));
+  });
+  el("testConnection").addEventListener("click", testConnection);
+  el("resetSettings").addEventListener("click", resetSettings);
+  el("applyEnv").addEventListener("click", async () => {
+    const text = el("envText").value.trim();
+    if (!text) {
+      setSettingsStatus("Paste your .env contents first.", "error");
+      return;
+    }
+    const count = applyEnvText(text);
+    if (!count) {
+      setSettingsStatus("No supported keys found in that text.", "error");
+      return;
+    }
+    await saveSettingsForm(false);
+    el("envStatus").textContent = "Imported and saved.";
+    setSettingsStatus("Imported .env and saved", "ok");
+  });
+  el("envFile").addEventListener("change", async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    el("envText").value = text;
+    const count = applyEnvText(text);
+    if (!count) {
+      setSettingsStatus("No supported keys found in " + file.name, "error");
+      return;
+    }
+    await saveSettingsForm(false);
+    el("envStatus").textContent = "Imported from " + file.name + " and saved.";
+    setSettingsStatus("Imported .env and saved", "ok");
+  });
+  el("menuOverlay").addEventListener("click", (event) => {
+    if (event.target === el("menuOverlay")) closeOverlay("menuOverlay");
+  });
+  el("settingsModal").addEventListener("click", (event) => {
+    if (event.target === el("settingsModal")) closeOverlay("settingsModal");
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeOverlay("menuOverlay");
+      closeOverlay("settingsModal");
+    }
+  });
   el("send").addEventListener("click", () => {
     const input = el("input");
     const value = input.value;

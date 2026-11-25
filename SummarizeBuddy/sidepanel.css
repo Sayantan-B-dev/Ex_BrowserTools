@@ -58,6 +58,210 @@ header {
 .header-actions {
   display: flex;
   gap: 6px;
+  align-items: center;
+}
+
+.burger-btn {
+  padding: 7px 10px;
+}
+
+.burger {
+  display: block;
+  position: relative;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.burger::before,
+.burger::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.burger::before {
+  top: -5px;
+}
+
+.burger::after {
+  top: 5px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  background: rgba(4, 6, 10, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.drawer {
+  display: flex;
+  flex-direction: column;
+  width: 82%;
+  max-width: 320px;
+  height: 100%;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  animation: slide-in 0.16s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+
+.drawer-item {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 94%;
+  max-width: 520px;
+  max-height: 88%;
+  margin: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: pop 0.16s ease-out;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.panel-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.setting-group {
+  margin-bottom: 18px;
+}
+
+.setting-group:last-child {
+  margin-bottom: 0;
+}
+
+.setting-group h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+
+.hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.modal input,
+.modal select,
+.modal textarea {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+  border-color: var(--accent);
+}
+
+.modal textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.modal .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+}
+
+.modal .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.modal .row input[type="file"] {
+  padding: 6px;
+  font-size: 12px;
+}
+
+.modal .row button {
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .modal .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 button {
@@ -126,6 +330,14 @@ button.ghost {
 
 .status.warn {
   color: #ffc861;
+}
+
+.status.ok {
+  color: #4ade80;
+}
+
+.status.error {
+  color: var(--error);
 }
 
 .controls {
