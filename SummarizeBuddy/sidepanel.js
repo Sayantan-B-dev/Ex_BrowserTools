@@ -35,8 +35,14 @@ function showToast(text, kind) {
   }, 2600);
 }
 
+function applyTheme() {
+  const theme = (settings && settings.theme) || "dark";
+  document.documentElement.dataset.theme = theme;
+}
+
 async function loadSettings() {
   settings = await SB.loadSettings();
+  applyTheme();
   el("status").textContent = providerLabel();
   el("status").classList.toggle("warn", !hasKey());
   if (!hasKey()) {
@@ -372,6 +378,7 @@ function setSettingsStatus(text, kind) {
 
 function fillSettingsForm() {
   if (!settings) return;
+  el("theme").value = settings.theme || SB.DEFAULTS.theme;
   el("provider").value = settings.provider || SB.DEFAULTS.provider;
   el("baseUrl").value = settings.baseUrl || "";
   el("model").value = settings.model || "";
@@ -393,6 +400,7 @@ function readSettingsForm() {
 
   return {
     ...(settings || {}),
+    theme: el("theme").value,
     provider: el("provider").value,
     baseUrl: el("baseUrl").value.trim(),
     model: el("model").value.trim(),
@@ -517,6 +525,12 @@ function init() {
     showToast("All chats is not available yet.");
   });
   el("closeSettings").addEventListener("click", () => closeOverlay("settingsModal"));
+  el("theme").addEventListener("change", async () => {
+    if (!settings) settings = await SB.loadSettings();
+    settings.theme = el("theme").value;
+    applyTheme();
+    await SB.saveSettings(settings);
+  });
   el("provider").addEventListener("change", useProviderDefaults);
   el("saveSettings").addEventListener("click", () => {
     saveSettingsForm(true).catch((error) => setSettingsStatus(error.message || String(error), "error"));

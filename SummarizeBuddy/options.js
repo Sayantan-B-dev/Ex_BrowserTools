@@ -128,7 +128,10 @@ function readForm() {
 }
 
 async function save() {
-  const settings = readForm();
+  const form = readForm();
+  const stored = await chrome.storage.local.get("settings");
+  const settings = { ...((stored && stored.settings) || {}), ...form };
+  settings.keys = { ...((stored && stored.settings && stored.settings.keys) || {}), ...form.keys };
   await chrome.storage.local.set({ settings });
   setStatus("Saved", "ok");
 }

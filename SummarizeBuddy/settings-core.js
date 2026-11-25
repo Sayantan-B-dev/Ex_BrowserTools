@@ -7,6 +7,7 @@
     maxChars: 12000,
     maxTokens: 1200,
     temperature: 0.3,
+    theme: "dark",
     keys: { adaption: "", openrouter: [], nvidia: "" }
   };
 

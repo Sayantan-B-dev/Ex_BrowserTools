@@ -1,14 +1,122 @@
-:root {
+:root,
+:root[data-theme="dark"] {
   --bg: #0f1115;
   --panel: #171a21;
   --panel-2: #1e222b;
   --border: #2a2f3a;
   --text: #e7ebf3;
+  --text-strong: #ffffff;
   --muted: #8b93a5;
   --accent: #4f8cff;
   --accent-hover: #6b9dff;
   --user: #24344f;
   --error: #ff6b6b;
+  --em: #d3d9e6;
+  --code-bg: #0c0e12;
+  --code-head: #12151b;
+  --code-text: #d6e2ff;
+  --code-inline: #a8c7ff;
+  --overlay: rgba(4, 6, 10, 0.62);
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --panel-2: #eef2f8;
+  --border: #d7dde8;
+  --text: #1b2230;
+  --text-strong: #0b1220;
+  --muted: #5b6474;
+  --accent: #2f6fed;
+  --accent-hover: #4a83f0;
+  --user: #dbe7ff;
+  --error: #d92d20;
+  --em: #334155;
+  --code-bg: #f3f5f9;
+  --code-head: #e9edf4;
+  --code-text: #1f2937;
+  --code-inline: #1d4ed8;
+  --overlay: rgba(15, 23, 42, 0.42);
+}
+
+:root[data-theme="midnight"] {
+  --bg: #070b16;
+  --panel: #0e1526;
+  --panel-2: #131c31;
+  --border: #1f2b45;
+  --text: #dbe4f5;
+  --text-strong: #ffffff;
+  --muted: #7f8db0;
+  --accent: #6c8cff;
+  --accent-hover: #86a1ff;
+  --user: #1a2745;
+  --error: #ff6b6b;
+  --em: #b9c5e0;
+  --code-bg: #060a14;
+  --code-head: #0b1222;
+  --code-text: #d6e2ff;
+  --code-inline: #9fb6ff;
+  --overlay: rgba(2, 4, 10, 0.7);
+}
+
+:root[data-theme="forest"] {
+  --bg: #0c1410;
+  --panel: #11201a;
+  --panel-2: #16291f;
+  --border: #21382c;
+  --text: #dcefe3;
+  --text-strong: #ffffff;
+  --muted: #86a695;
+  --accent: #34d399;
+  --accent-hover: #4ade80;
+  --user: #173a2a;
+  --error: #ff6b6b;
+  --em: #b7d6c4;
+  --code-bg: #08120d;
+  --code-head: #0d1c15;
+  --code-text: #c9f0d9;
+  --code-inline: #7ff0b8;
+  --overlay: rgba(3, 10, 6, 0.68);
+}
+
+:root[data-theme="solarized"] {
+  --bg: #002b36;
+  --panel: #073642;
+  --panel-2: #0a4450;
+  --border: #14505c;
+  --text: #eee8d5;
+  --text-strong: #ffffff;
+  --muted: #93a1a1;
+  --accent: #268bd2;
+  --accent-hover: #2aa198;
+  --user: #0b4a5a;
+  --error: #dc322f;
+  --em: #d5cfbb;
+  --code-bg: #00212b;
+  --code-head: #06303a;
+  --code-text: #e6e0cc;
+  --code-inline: #7cc7ff;
+  --overlay: rgba(0, 20, 26, 0.68);
+}
+
+:root[data-theme="rose"] {
+  --bg: #150f14;
+  --panel: #1f161d;
+  --panel-2: #281b24;
+  --border: #3a2835;
+  --text: #f4e7ef;
+  --text-strong: #ffffff;
+  --muted: #a98ea1;
+  --accent: #f472b6;
+  --accent-hover: #fb8ec8;
+  --user: #3a2233;
+  --error: #ff6b6b;
+  --em: #e3c6d6;
+  --code-bg: #110b10;
+  --code-head: #1a1218;
+  --code-text: #f5d9e8;
+  --code-inline: #ffa8d4;
+  --overlay: rgba(10, 4, 8, 0.68);
 }
 
 * {
@@ -98,7 +206,7 @@ header {
   inset: 0;
   z-index: 30;
   display: flex;
-  background: rgba(4, 6, 10, 0.62);
+  background: var(--overlay);
   backdrop-filter: blur(2px);
 }
 
@@ -441,7 +549,7 @@ button.ghost {
 .msg.md h6 {
   margin: 12px 0 6px;
   line-height: 1.3;
-  color: #fff;
+  color: var(--text-strong);
 }
 
 .msg.md h1 {
@@ -480,11 +588,11 @@ button.ghost {
 }
 
 .msg.md strong {
-  color: #fff;
+  color: var(--text-strong);
 }
 
 .msg.md em {
-  color: #d3d9e6;
+  color: var(--em);
 }
 
 .msg.md a {
@@ -497,13 +605,13 @@ button.ghost {
 }
 
 .msg.md code {
-  background: #12151b;
+  background: var(--code-head);
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 1px 5px;
   font-family: "Cascadia Code", Consolas, monospace;
   font-size: 12px;
-  color: #a8c7ff;
+  color: var(--code-inline);
 }
 
 .msg.md .code-block {
@@ -511,7 +619,7 @@ button.ghost {
   border: 1px solid var(--border);
   border-radius: 9px;
   overflow: hidden;
-  background: #0c0e12;
+  background: var(--code-bg);
 }
 
 .msg.md .code-lang {
@@ -521,7 +629,7 @@ button.ghost {
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--muted);
-  background: #12151b;
+  background: var(--code-head);
   border-bottom: 1px solid var(--border);
 }
 
@@ -535,7 +643,7 @@ button.ghost {
   background: none;
   border: none;
   padding: 0;
-  color: #d6e2ff;
+  color: var(--code-text);
   font-size: 12px;
   line-height: 1.55;
   white-space: pre;
