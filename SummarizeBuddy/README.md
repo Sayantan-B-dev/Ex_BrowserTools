@@ -6,11 +6,17 @@ questions about it. It is provider-agnostic and uses your own API key.
 ## Features
 
 - One-click **Summarize page** with a TL;DR, key bullet points, and action items.
-- Chat about the current page, with conversation history kept for the session.
+- **Summarize chat** condenses the current conversation.
+- Chat about the current page. Memory is page-scoped and resets when the page changes.
 - Rendered Markdown replies: headings, lists, bold/italic, links, quotes, inline and fenced code.
 - Multiple providers: Adaption, OpenRouter, NVIDIA NIM, or any OpenAI-compatible endpoint.
-- Import your existing `.env` directly in Settings; OpenRouter keys rotate per request.
-- Configurable model, base URL, timeout, output length, and page-text limit.
+- Import your existing `.env` in Settings. OpenRouter keys rotate per request.
+- Floating Settings popup inside the side panel, with a hamburger menu for Settings and All chats.
+- Six themes: Dark, Light, Midnight, Forest, Solarized, Rose.
+- Save chats locally, with an optional auto save toggle. Browse saved chats in All chats by domain, link, and time created.
+- Download the current chat as a PDF through the print dialog.
+- Export and import all non-secret data (theme, preferences, saved chats) as `MasterMetadata.json`.
+- Auto refresh when the active tab changes or navigates. The manual Reload button is still available.
 - Keys stay in `chrome.storage.local`; nothing is hardcoded in the source.
 
 ## Requirements
@@ -33,10 +39,13 @@ SummarizeBuddy card.
 
 ## Configuration
 
-Open Settings from either place:
+Open the floating Settings popup from either place:
 
 - The **Settings** button in the side panel header.
-- `chrome://extensions` → SummarizeBuddy → **Details** → **Extension options**.
+- The hamburger menu in the header, then **Settings**.
+
+The separate options page still exists as a fallback under
+`chrome://extensions` → SummarizeBuddy → **Details** → **Extension options**.
 
 ### Option A: Import your `.env` (recommended)
 
@@ -93,11 +102,19 @@ Use **Test connection** to send a tiny "Reply with exactly: OK" request with the
 
 1. Navigate to an article, documentation page, or any readable page.
 2. Click the SummarizeBuddy toolbar icon. The side panel opens and reads the page.
-3. Click **Summarize page** for a TL;DR, key points, and action items.
-4. Type a follow-up question in the box and press **Enter** (use **Shift+Enter** for a new line).
-5. **Reload** re-reads the current tab (use it after navigating). **Clear chat** resets the history.
+3. Use the bottom rows:
+   - Row 1: type a question in the chat bubble and press **Send** (or **Enter**).
+   - Row 2: **Summarize page** or **Summarize chat**.
+   - Row 3: **Clear**, **Download PDF**, or **Save locally**.
+4. Open the hamburger menu for **Settings** and **All chats**.
+5. The page info and provider status sit directly above the controls.
 
-The header shows the active provider and model, plus a warning when no API key is configured.
+The chat is page-scoped. When the active tab changes, navigates, or reloads, the panel
+automatically re-reads the page and starts a fresh conversation. **Reload** still re-reads the
+current tab manually.
+
+Settings include themes, auto save, and export/import of `MasterMetadata.json`. All chats are stored
+in `chrome.storage.local` and can be opened or deleted from **All chats**.
 
 ## How it works
 
@@ -129,8 +146,9 @@ sidepanel.js ── markdown renderer ──▶ styled chat bubble
 | --- | --- |
 | `manifest.json` | Manifest V3 declaration, permissions, side panel, options page |
 | `background.js` | Provider selection, key rotation, request timeout, API calls |
-| `sidepanel.html/.css/.js` | Chat UI, page reading, prompt building, Markdown rendering |
-| `options.html/.css/.js` | Settings form, `.env` import/parsing, connection test |
+| `settings-core.js` | Shared defaults, provider presets, `.env` parsing, load/save helpers |
+| `sidepanel.html/.css/.js` | Chat UI, page reading, themes, settings popup, All chats, PDF and backup |
+| `options.html/.css/.js` | Fallback settings page, `.env` import/parsing, connection test |
 | `.env.example` | Placeholder template for the supported environment variables |
 
 ## Privacy and security
@@ -163,4 +181,6 @@ sidepanel.js ── markdown renderer ──▶ styled chat bubble
 - Text-only: images, charts, and scanned PDFs are not interpreted.
 - Long pages are truncated at `maxChars`; raise it if your model has a large context window.
 - Responses are not streamed; the reply appears when the full response arrives.
-- One page context at a time, kept for the current panel session only.
+- One page context at a time. The conversation resets when the page changes.
+- PDF export opens the print dialog. Choose **Save as PDF** there to download the file.
+- The bot icon uses the Material Symbols font from Google Fonts. It may not render while offline.

@@ -13,6 +13,7 @@ ReadAssistent/
     ├── .env.example      # template showing the supported variables
     ├── manifest.json
     ├── background.js
+    ├── settings-core.js
     ├── sidepanel.html / .css / .js
     ├── options.html / .css / .js
     └── README.md         # detailed setup and usage guide
