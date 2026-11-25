@@ -341,8 +341,91 @@ function summarizeChat() {
   send(SUMMARIZE_CHAT_PROMPT);
 }
 
+function printStyles() {
+  return (
+    "*{box-sizing:border-box}" +
+    "body{font-family:Georgia,'Times New Roman',serif;color:#111;margin:32px;line-height:1.55}" +
+    "header{border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:20px}" +
+    "h1{font-family:Arial,sans-serif;font-size:20px;margin:0 0 6px}" +
+    ".meta{color:#555;font-size:12px;word-break:break-all}" +
+    ".msg{margin:0 0 16px;page-break-inside:avoid}" +
+    ".role{font-family:Arial,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#666;margin-bottom:4px}" +
+    ".body{border-left:3px solid #ccc;padding-left:12px}" +
+    ".msg.user .body{border-left-color:#4f8cff}" +
+    ".msg.assistant .body{border-left-color:#999}" +
+    ".body p{margin:0 0 8px}" +
+    "h2,h3,h4,h5,h6{font-family:Arial,sans-serif}" +
+    "ul,ol{margin:4px 0 8px;padding-left:22px}" +
+    "li{margin:2px 0}" +
+    "code{font-family:Consolas,monospace;background:#f2f2f2;border:1px solid #ddd;border-radius:4px;padding:1px 4px;font-size:12px}" +
+    "pre{background:#f7f7f7;border:1px solid #ddd;border-radius:6px;padding:10px;overflow-x:auto;white-space:pre-wrap}" +
+    "pre code{background:none;border:none;padding:0}" +
+    ".code-lang{display:block;font-size:10px;text-transform:uppercase;color:#777;margin-bottom:4px}" +
+    "blockquote{margin:8px 0;padding-left:10px;border-left:3px solid #ccc;color:#555}" +
+    "a{color:#1a4fd0}" +
+    "hr{border:none;border-top:1px solid #ccc;margin:12px 0}" +
+    "@media print{body{margin:12mm}}"
+  );
+}
+
 function downloadPdf() {
-  showToast("PDF export is not available yet.");
+  if (!history.length) {
+    showToast("No chat to export yet.");
+    return;
+  }
+
+  const title = page ? page.title : "Chat";
+  const url = page ? page.url : "";
+  const domain = page ? chatDomain(page.url) : "";
+  const started = history[0] && history[0].ts ? formatTime(history[0].ts) : formatTime(Date.now());
+
+  const parts = [];
+  parts.push("<!doctype html><html><head><meta charset='utf-8'>");
+  parts.push("<title>" + escapeHtml(title || "Chat") + "</title>");
+  parts.push("<style>" + printStyles() + "</style></head><body>");
+  parts.push("<header>");
+  parts.push("<h1>" + escapeHtml(title || "Chat") + "</h1>");
+  parts.push(
+    "<div class='meta'>" +
+      (domain ? escapeHtml(domain) + " · " : "") +
+      escapeHtml(url || "") +
+      (started ? " · " + escapeHtml(started) : "") +
+      "</div>"
+  );
+  parts.push("</header>");
+
+  for (const message of history) {
+    const isAssistant = message.role === "assistant";
+    const body = isAssistant
+      ? renderMarkdown(message.content)
+      : "<p>" + escapeHtml(message.content).replace(/\n/g, "<br>") + "</p>";
+    parts.push(
+      "<article class='msg " + (isAssistant ? "assistant" : "user") + "'>" +
+        "<div class='role'>" + (isAssistant ? "Assistant" : "You") + "</div>" +
+        "<div class='body'>" + body + "</div>" +
+        "</article>"
+    );
+  }
+  parts.push("</body></html>");
+
+  const win = window.open("", "_blank");
+  if (!win) {
+    showToast("Allow popups to export the PDF.", "error");
+    return;
+  }
+
+  win.document.open();
+  win.document.write(parts.join(""));
+  win.document.close();
+  win.focus();
+  setTimeout(() => {
+    try {
+      win.print();
+    } catch {
+      showToast("Print dialog could not open.", "error");
+    }
+  }, 300);
+  showToast("Use Save as PDF in the print dialog", "ok");
 }
 
 function chatDomain(url) {
