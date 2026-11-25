@@ -163,6 +163,16 @@ header {
   box-shadow: 0 0 10px var(--accent);
 }
 
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  line-height: 1;
+}
+
+.bot-icon {
+  font-size: 20px;
+  color: var(--accent);
+}
+
 .header-actions {
   display: flex;
   gap: 6px;
@@ -587,6 +597,25 @@ button.ghost {
   white-space: pre-wrap;
   word-break: break-word;
   animation: pop 0.14s ease-out;
+}
+
+.msg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 92%;
+  align-self: flex-start;
+}
+
+.msg-row .msg {
+  max-width: 100%;
+}
+
+.msg-row .avatar {
+  flex: none;
+  margin-top: 7px;
+  font-size: 18px;
+  color: var(--accent);
 }
 
 @keyframes pop {

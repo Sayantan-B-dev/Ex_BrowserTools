@@ -6,6 +6,9 @@ let history = [];
 let busy = false;
 let toastTimer = null;
 let currentChatId = null;
+let activeTabId = null;
+let activeWindowId = null;
+let pageChangeTimer = null;
 
 const CHATS_KEY = "chats";
 const META_VERSION = 1;
@@ -58,6 +61,9 @@ async function readPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id) throw new Error("No active tab found.");
 
+  activeTabId = tab.id;
+  activeWindowId = tab.windowId;
+
   const [injection] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
@@ -82,13 +88,19 @@ async function readPage() {
   return data;
 }
 
-async function refreshPage() {
+async function refreshPage(options) {
+  const reset = Boolean(options && options.reset);
+  const previousUrl = page ? page.url : null;
   try {
     await loadSettings();
     const result = await readPage();
     const max = Number(settings.maxChars) || 12000;
     const truncated = result.text.length > max;
     page = { ...result, text: result.text.slice(0, max) };
+
+    if (reset || (previousUrl && previousUrl !== page.url)) {
+      resetConversation();
+    }
 
     el("pageTitle").textContent = result.title || result.url;
     let host = "";
@@ -103,6 +115,7 @@ async function refreshPage() {
       (host ? " · " + host : "");
   } catch (error) {
     page = null;
+    if (reset) resetConversation();
     el("pageTitle").textContent = "Could not read this page";
     el("pageMeta").textContent = error.message || String(error);
     el("pageMeta").title = error.message || "";
@@ -277,13 +290,24 @@ function addMessage(role, text) {
   removeEmptyState();
   const node = document.createElement("div");
   node.className = "msg " + role;
+
   if (role === "assistant") {
     node.classList.add("md");
     node.innerHTML = renderMarkdown(text);
+
+    const row = document.createElement("div");
+    row.className = "msg-row assistant";
+    const avatar = document.createElement("span");
+    avatar.className = "material-symbols-outlined avatar";
+    avatar.textContent = "smart_toy";
+    avatar.setAttribute("aria-hidden", "true");
+    row.append(avatar, node);
+    el("chat").appendChild(row);
   } else {
     node.textContent = text;
+    el("chat").appendChild(node);
   }
-  el("chat").appendChild(node);
+
   el("chat").scrollTop = el("chat").scrollHeight;
   return node;
 }
@@ -709,11 +733,15 @@ function showEmpty() {
   el("chat").appendChild(node);
 }
 
-function clearChat() {
+function resetConversation() {
   history = [];
   currentChatId = null;
   el("chat").innerHTML = "";
   showEmpty();
+}
+
+function clearChat() {
+  resetConversation();
 }
 
 function autoGrow() {
@@ -868,6 +896,28 @@ async function openSettings() {
   openOverlay("settingsModal");
 }
 
+function scheduleAutoRefresh(delay) {
+  clearTimeout(pageChangeTimer);
+  pageChangeTimer = setTimeout(() => {
+    refreshPage({ reset: true });
+  }, delay);
+}
+
+function initTabWatchers() {
+  chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+    if (!tab || !tab.active) return;
+    if (activeWindowId != null && tab.windowId !== activeWindowId) return;
+    if (!changeInfo.url && changeInfo.status !== "complete") return;
+    scheduleAutoRefresh(600);
+  });
+
+  chrome.tabs.onActivated.addListener((info) => {
+    if (activeWindowId != null && info.windowId !== activeWindowId) return;
+    activeTabId = info.tabId;
+    scheduleAutoRefresh(300);
+  });
+}
+
 function init() {
   el("summarize").addEventListener("click", () => send(SUMMARIZE_PROMPT));
   el("summarizeChat").addEventListener("click", summarizeChat);
@@ -977,7 +1027,9 @@ function init() {
   });
 
   showEmpty();
-  loadSettings().then(refreshPage);
+  loadSettings()
+    .then(() => refreshPage())
+    .then(initTabWatchers);
   el("input").focus();
 }
 
