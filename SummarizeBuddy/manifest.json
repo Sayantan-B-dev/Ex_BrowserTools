@@ -3,7 +3,7 @@
   "name": "SummarizeBuddy",
   "version": "1.0.0",
   "description": "Summarize the current page and chat about it using your own AI API key.",
-  "permissions": ["storage", "scripting", "activeTab", "sidePanel"],
+  "permissions": ["storage", "unlimitedStorage", "scripting", "activeTab", "sidePanel"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"

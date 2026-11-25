@@ -5,6 +5,9 @@ let page = null;
 let history = [];
 let busy = false;
 let toastTimer = null;
+let currentChatId = null;
+
+const CHATS_KEY = "chats";
 
 const SUMMARIZE_PROMPT =
   "Summarize this page. Give me:\n" +
@@ -304,25 +307,29 @@ async function send(text) {
   if (!settings) await loadSettings();
 
   addMessage("user", content);
-  history.push({ role: "user", content });
+  history.push({ role: "user", content, ts: Date.now() });
   setBusy(true);
   const pending = addPending();
 
   try {
-    const messages = [{ role: "system", content: systemPrompt() }, ...history];
+    const turns = history.map((message) => ({ role: message.role, content: message.content }));
+    const messages = [{ role: "system", content: systemPrompt() }, ...turns];
     const response = await chrome.runtime.sendMessage({ type: "chat", messages });
     pending.remove();
     if (!response || !response.ok) {
       throw new Error((response && response.error) || "Request failed.");
     }
     addMessage("assistant", response.content);
-    history.push({ role: "assistant", content: response.content });
+    history.push({ role: "assistant", content: response.content, ts: Date.now() });
   } catch (error) {
     pending.remove();
     addMessage("error", error.message || String(error));
   } finally {
     setBusy(false);
     el("chat").scrollTop = el("chat").scrollHeight;
+    if (settings && settings.autoSave && history.length) {
+      saveCurrentChat({ notify: false }).catch(() => {});
+    }
   }
 }
 
@@ -338,8 +345,174 @@ function downloadPdf() {
   showToast("PDF export is not available yet.");
 }
 
-function saveCurrentChat() {
-  showToast("Local saving is not available yet.");
+function chatDomain(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url || "";
+  }
+}
+
+async function getChats() {
+  const stored = await chrome.storage.local.get(CHATS_KEY);
+  return Array.isArray(stored[CHATS_KEY]) ? stored[CHATS_KEY] : [];
+}
+
+async function setChats(chats) {
+  await chrome.storage.local.set({ [CHATS_KEY]: chats });
+}
+
+function newChatId() {
+  return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+async function saveCurrentChat(options) {
+  if (!history.length) {
+    showToast("No messages to save yet.");
+    return null;
+  }
+
+  const chats = await getChats();
+  const now = Date.now();
+  let chat = currentChatId ? chats.find((item) => item.id === currentChatId) : null;
+
+  if (!chat) {
+    chat = {
+      id: newChatId(),
+      domain: "",
+      url: "",
+      title: "",
+      createdAt: now,
+      updatedAt: now,
+      messages: []
+    };
+    chats.push(chat);
+    currentChatId = chat.id;
+  }
+
+  if (page) {
+    chat.domain = chatDomain(page.url);
+    chat.url = page.url;
+    chat.title = page.title || "";
+  }
+  chat.updatedAt = now;
+  chat.messages = history.map((message) => ({
+    role: message.role,
+    content: message.content,
+    ts: message.ts || now
+  }));
+
+  await setChats(chats);
+  if (options && options.notify) showToast("Chat saved locally", "ok");
+  return chat;
+}
+
+function formatTime(ts) {
+  if (!ts) return "";
+  try {
+    return new Date(ts).toLocaleString();
+  } catch {
+    return "";
+  }
+}
+
+function renderChatCard(chat) {
+  const card = document.createElement("div");
+  card.className = "chat-card";
+
+  const top = document.createElement("div");
+  top.className = "chat-top";
+  const domain = document.createElement("span");
+  domain.className = "chat-domain";
+  domain.textContent = chat.domain || "unknown";
+  const time = document.createElement("span");
+  time.className = "chat-time";
+  time.textContent = formatTime(chat.createdAt);
+  top.append(domain, time);
+
+  const link = document.createElement("a");
+  link.className = "chat-link";
+  link.href = chat.url || "#";
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = chat.url || "(no link)";
+
+  const meta = document.createElement("div");
+  meta.className = "chat-meta";
+  const count = chat.messages ? chat.messages.length : 0;
+  meta.textContent = count + " messages" + (chat.title ? " · " + chat.title : "");
+
+  const actions = document.createElement("div");
+  actions.className = "chat-actions";
+  const openButton = document.createElement("button");
+  openButton.textContent = "Open";
+  openButton.addEventListener("click", () => openSavedChat(chat.id));
+  const deleteButton = document.createElement("button");
+  deleteButton.textContent = "Delete";
+  deleteButton.addEventListener("click", () => deleteChat(chat.id));
+  actions.append(openButton, deleteButton);
+
+  card.append(top, link, meta, actions);
+  return card;
+}
+
+async function renderChats() {
+  const list = el("chatsList");
+  const chats = await getChats();
+  list.innerHTML = "";
+
+  if (!chats.length) {
+    const empty = document.createElement("div");
+    empty.className = "chats-empty";
+    empty.textContent =
+      "No saved chats yet. Turn on auto save in Settings, or use Save locally.";
+    list.appendChild(empty);
+    return;
+  }
+
+  chats.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+  for (const chat of chats) {
+    list.appendChild(renderChatCard(chat));
+  }
+}
+
+async function openChats() {
+  closeOverlay("menuOverlay");
+  await renderChats();
+  openOverlay("chatsModal");
+}
+
+async function openSavedChat(id) {
+  const chats = await getChats();
+  const chat = chats.find((item) => item.id === id);
+  if (!chat) return;
+
+  history = (chat.messages || []).map((message) => ({
+    role: message.role,
+    content: message.content,
+    ts: message.ts
+  }));
+  currentChatId = chat.id;
+  el("chat").innerHTML = "";
+
+  if (!history.length) {
+    showEmpty();
+  } else {
+    for (const message of history) {
+      addMessage(message.role === "assistant" ? "assistant" : "user", message.content);
+    }
+  }
+
+  closeOverlay("chatsModal");
+  showToast("Chat loaded", "ok");
+}
+
+async function deleteChat(id) {
+  const chats = await getChats();
+  await setChats(chats.filter((item) => item.id !== id));
+  if (currentChatId === id) currentChatId = null;
+  await renderChats();
+  showToast("Chat deleted", "ok");
 }
 
 function showEmpty() {
@@ -352,6 +525,7 @@ function showEmpty() {
 
 function clearChat() {
   history = [];
+  currentChatId = null;
   el("chat").innerHTML = "";
   showEmpty();
 }
@@ -379,6 +553,7 @@ function setSettingsStatus(text, kind) {
 function fillSettingsForm() {
   if (!settings) return;
   el("theme").value = settings.theme || SB.DEFAULTS.theme;
+  el("autoSave").checked = Boolean(settings.autoSave);
   el("provider").value = settings.provider || SB.DEFAULTS.provider;
   el("baseUrl").value = settings.baseUrl || "";
   el("model").value = settings.model || "";
@@ -401,6 +576,7 @@ function readSettingsForm() {
   return {
     ...(settings || {}),
     theme: el("theme").value,
+    autoSave: el("autoSave").checked,
     provider: el("provider").value,
     baseUrl: el("baseUrl").value.trim(),
     model: el("model").value.trim(),
@@ -511,7 +687,7 @@ function init() {
   el("summarizeChat").addEventListener("click", summarizeChat);
   el("clear").addEventListener("click", clearChat);
   el("downloadPdf").addEventListener("click", downloadPdf);
-  el("saveChat").addEventListener("click", saveCurrentChat);
+  el("saveChat").addEventListener("click", () => saveCurrentChat({ notify: true }));
   el("refresh").addEventListener("click", async () => {
     await refreshPage();
     await loadSettings();
@@ -520,15 +696,18 @@ function init() {
   el("menuBtn").addEventListener("click", () => openOverlay("menuOverlay"));
   el("closeMenu").addEventListener("click", () => closeOverlay("menuOverlay"));
   el("menuSettings").addEventListener("click", openSettings);
-  el("menuChats").addEventListener("click", () => {
-    closeOverlay("menuOverlay");
-    showToast("All chats is not available yet.");
-  });
+  el("menuChats").addEventListener("click", openChats);
+  el("closeChats").addEventListener("click", () => closeOverlay("chatsModal"));
   el("closeSettings").addEventListener("click", () => closeOverlay("settingsModal"));
   el("theme").addEventListener("change", async () => {
     if (!settings) settings = await SB.loadSettings();
     settings.theme = el("theme").value;
     applyTheme();
+    await SB.saveSettings(settings);
+  });
+  el("autoSave").addEventListener("change", async () => {
+    if (!settings) settings = await SB.loadSettings();
+    settings.autoSave = el("autoSave").checked;
     await SB.saveSettings(settings);
   });
   el("provider").addEventListener("change", useProviderDefaults);
@@ -572,10 +751,14 @@ function init() {
   el("settingsModal").addEventListener("click", (event) => {
     if (event.target === el("settingsModal")) closeOverlay("settingsModal");
   });
+  el("chatsModal").addEventListener("click", (event) => {
+    if (event.target === el("chatsModal")) closeOverlay("chatsModal");
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeOverlay("menuOverlay");
       closeOverlay("settingsModal");
+      closeOverlay("chatsModal");
     }
   });
   el("send").addEventListener("click", () => {

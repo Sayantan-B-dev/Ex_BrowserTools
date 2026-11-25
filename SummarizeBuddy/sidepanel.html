@@ -153,6 +153,14 @@
               <textarea id="openrouterKeys" rows="3" spellcheck="false"></textarea>
             </label>
           </section>
+
+          <section class="setting-group">
+            <h3>Data</h3>
+            <label class="check">
+              <input id="autoSave" type="checkbox" />
+              Auto save chats locally
+            </label>
+          </section>
         </div>
         <div class="panel-foot">
           <button id="saveSettings" class="primary" type="button">Save</button>
@@ -160,6 +168,16 @@
           <button id="resetSettings" type="button">Reset</button>
           <span id="settingsStatus" class="status"></span>
         </div>
+      </div>
+    </div>
+
+    <div id="chatsModal" class="overlay" hidden>
+      <div class="modal" role="dialog" aria-label="All chats">
+        <div class="panel-head">
+          <strong>All chats</strong>
+          <button id="closeChats" class="ghost" type="button">Close</button>
+        </div>
+        <div id="chatsList" class="chats-list"></div>
       </div>
     </div>
 
