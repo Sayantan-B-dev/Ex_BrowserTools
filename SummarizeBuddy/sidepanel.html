@@ -160,6 +160,15 @@
               <input id="autoSave" type="checkbox" />
               Auto save chats locally
             </label>
+            <p class="hint">
+              Export theme, preferences (without API keys), and all saved chats as
+              MasterMetadata.json. Import it on another device.
+            </p>
+            <div class="row">
+              <button id="exportData" type="button">Export data</button>
+              <button id="importData" type="button">Import data</button>
+              <input id="importFile" type="file" accept="application/json,.json" hidden />
+            </div>
           </section>
         </div>
         <div class="panel-foot">

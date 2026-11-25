@@ -8,6 +8,7 @@ let toastTimer = null;
 let currentChatId = null;
 
 const CHATS_KEY = "chats";
+const META_VERSION = 1;
 
 const SUMMARIZE_PROMPT =
   "Summarize this page. Give me:\n" +
@@ -598,6 +599,108 @@ async function deleteChat(id) {
   showToast("Chat deleted", "ok");
 }
 
+function downloadJson(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function exportData() {
+  if (!settings) settings = await SB.loadSettings();
+  const chats = await getChats();
+  const safeSettings = { ...settings };
+  delete safeSettings.keys;
+
+  const payload = {
+    app: "SummarizeBuddy",
+    version: META_VERSION,
+    exportedAt: new Date().toISOString(),
+    settings: safeSettings,
+    chats
+  };
+
+  downloadJson("MasterMetadata.json", payload);
+  showToast("Exported MasterMetadata.json", "ok");
+}
+
+function normalizeImportedChat(chat) {
+  const messages = Array.isArray(chat.messages)
+    ? chat.messages
+        .filter((message) => message && typeof message.content === "string")
+        .map((message) => ({
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: message.content,
+          ts: Number(message.ts) || 0
+        }))
+    : [];
+
+  return {
+    id: String(chat.id),
+    domain: chat.domain || chatDomain(chat.url || ""),
+    url: chat.url || "",
+    title: chat.title || "",
+    createdAt: Number(chat.createdAt) || Date.now(),
+    updatedAt: Number(chat.updatedAt || chat.createdAt) || Date.now(),
+    messages
+  };
+}
+
+async function importData(file) {
+  let payload;
+  try {
+    payload = JSON.parse(await file.text());
+  } catch {
+    setSettingsStatus("That file is not valid JSON.", "error");
+    return;
+  }
+
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    setSettingsStatus("Unrecognized file.", "error");
+    return;
+  }
+
+  const importedSettings =
+    payload.settings && typeof payload.settings === "object" && !Array.isArray(payload.settings)
+      ? payload.settings
+      : null;
+  const importedChats = Array.isArray(payload.chats) ? payload.chats : null;
+
+  if (!importedSettings && !importedChats) {
+    setSettingsStatus("No importable data found.", "error");
+    return;
+  }
+
+  const confirmed = confirm(
+    "Import this data? Settings and saved chats will be replaced. API keys stay untouched."
+  );
+  if (!confirmed) return;
+
+  const current = await SB.loadSettings();
+  if (importedSettings) {
+    const merged = { ...current, ...importedSettings };
+    merged.keys = current.keys;
+    await SB.saveSettings(merged);
+  }
+
+  if (importedChats) {
+    const cleaned = importedChats
+      .filter((chat) => chat && typeof chat === "object" && chat.id != null)
+      .map(normalizeImportedChat);
+    await setChats(cleaned);
+  }
+
+  await loadSettings();
+  fillSettingsForm();
+  setSettingsStatus("Imported", "ok");
+  showToast("Data imported", "ok");
+}
+
 function showEmpty() {
   const node = document.createElement("div");
   node.className = "empty";
@@ -792,6 +895,16 @@ function init() {
     if (!settings) settings = await SB.loadSettings();
     settings.autoSave = el("autoSave").checked;
     await SB.saveSettings(settings);
+  });
+  el("exportData").addEventListener("click", () => {
+    exportData().catch((error) => setSettingsStatus(error.message || String(error), "error"));
+  });
+  el("importData").addEventListener("click", () => el("importFile").click());
+  el("importFile").addEventListener("change", async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    await importData(file);
+    event.target.value = "";
   });
   el("provider").addEventListener("change", useProviderDefaults);
   el("saveSettings").addEventListener("click", () => {
