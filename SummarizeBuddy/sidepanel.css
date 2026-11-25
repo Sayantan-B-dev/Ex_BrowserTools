@@ -285,6 +285,7 @@ header {
 .modal-body {
   overflow-y: auto;
   padding: 14px;
+  min-height: 0;
 }
 
 .panel-foot {
@@ -390,6 +391,8 @@ header {
 }
 
 .chats-list {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 12px;
   display: flex;
