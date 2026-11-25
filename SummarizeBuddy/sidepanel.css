@@ -98,7 +98,7 @@ button.ghost {
 
 .page-info {
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   background: var(--panel);
 }
 
@@ -128,15 +128,38 @@ button.ghost {
   color: #ffc861;
 }
 
-.toolbar {
+.controls {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
 }
 
-.toolbar .primary {
+.composer-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.composer-row #input {
   flex: 1;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.action-row > button {
+  flex: 1;
+  min-width: 0;
+}
+
+.action-row.three > button {
+  padding: 7px 6px;
+  font-size: 12px;
 }
 
 .chat {
@@ -360,17 +383,7 @@ button.ghost {
   padding: 20px;
 }
 
-footer {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  padding: 10px 14px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
-}
-
 #input {
-  flex: 1;
   resize: none;
   max-height: 140px;
   min-height: 38px;
@@ -392,13 +405,27 @@ footer {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 78px;
+  bottom: 190px;
   transform: translateX(-50%);
-  background: #2b1d1d;
-  border: 1px solid rgba(255, 107, 107, 0.4);
-  color: #ffb3b3;
+  z-index: 40;
+  background: #1d2530;
+  border: 1px solid var(--border);
+  color: var(--text);
   padding: 8px 14px;
   border-radius: 8px;
   font-size: 12px;
   max-width: 85%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.toast.ok {
+  background: #17281d;
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #a7f3c4;
+}
+
+.toast.error {
+  background: #2b1d1d;
+  border-color: rgba(255, 107, 107, 0.4);
+  color: #ffb3b3;
 }

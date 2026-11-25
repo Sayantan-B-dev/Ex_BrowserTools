@@ -18,23 +18,29 @@
       </div>
     </header>
 
+    <main id="chat" class="chat" aria-live="polite"></main>
+
     <section class="page-info">
       <div id="pageTitle" class="page-title">Reading page…</div>
       <div id="pageMeta" class="page-meta"></div>
       <div id="status" class="status"></div>
     </section>
 
-    <section class="toolbar">
-      <button id="summarize" class="primary">Summarize page</button>
-      <button id="clear" class="ghost">Clear chat</button>
+    <section class="controls">
+      <div class="composer-row">
+        <textarea id="input" rows="1" placeholder="Ask about this page…"></textarea>
+        <button id="send" class="primary">Send</button>
+      </div>
+      <div class="action-row two">
+        <button id="summarize" class="primary">Summarize page</button>
+        <button id="summarizeChat" class="ghost">Summarize chat</button>
+      </div>
+      <div class="action-row three">
+        <button id="clear" class="ghost">Clear</button>
+        <button id="downloadPdf" class="ghost">Download PDF</button>
+        <button id="saveChat" class="ghost">Save locally</button>
+      </div>
     </section>
-
-    <main id="chat" class="chat" aria-live="polite"></main>
-
-    <footer>
-      <textarea id="input" rows="1" placeholder="Ask about this page…"></textarea>
-      <button id="send" class="primary">Send</button>
-    </footer>
 
     <div id="toast" class="toast" hidden></div>
 

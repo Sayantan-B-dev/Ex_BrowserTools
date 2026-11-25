@@ -4,12 +4,17 @@ let settings = null;
 let page = null;
 let history = [];
 let busy = false;
+let toastTimer = null;
 
 const SUMMARIZE_PROMPT =
   "Summarize this page. Give me:\n" +
   "1. A 2-3 sentence TL;DR\n" +
   "2. 5-8 key bullet points\n" +
   "3. Any important numbers, dates, or action items";
+
+const SUMMARIZE_CHAT_PROMPT =
+  "Summarize our conversation so far about this page. " +
+  "Give a short TL;DR and the key points we have covered.";
 
 function providerLabel() {
   if (!settings) return "";
@@ -26,6 +31,17 @@ function hasKey() {
   return Boolean(keys[settings.provider]);
 }
 
+function showToast(text, kind) {
+  const node = el("toast");
+  node.textContent = text;
+  node.className = "toast" + (kind ? " " + kind : "");
+  node.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    node.hidden = true;
+  }, 2600);
+}
+
 async function loadSettings() {
   const stored = await chrome.storage.local.get("settings");
   settings = { maxChars: 12000, provider: "adaption", ...(stored.settings || {}) };
@@ -33,7 +49,7 @@ async function loadSettings() {
   el("status").textContent = providerLabel();
   el("status").classList.toggle("warn", !hasKey());
   if (!hasKey()) {
-    el("status").textContent = providerLabel() + " — no API key (open Settings)";
+    el("status").textContent = providerLabel() + " - no API key (open Settings)";
   }
 }
 
@@ -313,6 +329,22 @@ async function send(text) {
   }
 }
 
+function summarizeChat() {
+  if (!history.length) {
+    showToast("No chat to summarize yet.");
+    return;
+  }
+  send(SUMMARIZE_CHAT_PROMPT);
+}
+
+function downloadPdf() {
+  showToast("PDF export is not available yet.");
+}
+
+function saveCurrentChat() {
+  showToast("Local saving is not available yet.");
+}
+
 function showEmpty() {
   const node = document.createElement("div");
   node.className = "empty";
@@ -335,7 +367,10 @@ function autoGrow() {
 
 function init() {
   el("summarize").addEventListener("click", () => send(SUMMARIZE_PROMPT));
+  el("summarizeChat").addEventListener("click", summarizeChat);
   el("clear").addEventListener("click", clearChat);
+  el("downloadPdf").addEventListener("click", downloadPdf);
+  el("saveChat").addEventListener("click", saveCurrentChat);
   el("refresh").addEventListener("click", async () => {
     await refreshPage();
     await loadSettings();
