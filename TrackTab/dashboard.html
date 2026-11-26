@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrackTab Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">T</span>
+      <div>
+        <h1>TrackTab</h1>
+        <p class="sub" id="statusLine">Loading...</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="refreshBtn" class="btn" type="button">Refresh metrics</button>
+      <button id="toggleBtn" class="btn" type="button">Pause tracking</button>
+    </div>
+  </header>
+
+  <section class="db-bar">
+    <div class="db-info">
+      <span class="db-dot" id="dbDot"></span>
+      <span id="dbStatus">Database not linked</span>
+    </div>
+    <div class="db-actions">
+      <button id="linkBtn" class="btn small" type="button">Link file</button>
+      <button id="openFileBtn" class="btn small" type="button">Open file</button>
+      <button id="reconnectBtn" class="btn small hidden" type="button">Reconnect</button>
+      <button id="reloadBtn" class="btn small" type="button">Reload from file</button>
+      <button id="saveBtn" class="btn small" type="button">Save now</button>
+      <button id="unlinkBtn" class="btn small" type="button">Unlink</button>
+      <button id="exportBtn" class="btn small" type="button">Export JSON</button>
+      <button id="importBtn" class="btn small" type="button">Import JSON</button>
+      <button id="clearBtn" class="btn small danger" type="button">Clear all</button>
+      <input id="importInput" type="file" accept=".txt,.json,application/json" class="hidden">
+    </div>
+  </section>
+
+  <main>
+    <section class="cards" id="cards"></section>
+
+    <section class="charts">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Time by site</h2>
+          <span class="muted" id="donutTotal"></span>
+        </div>
+        <div id="donut" class="donut-wrap"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Active time by tab</h2>
+        </div>
+        <div id="bars" class="bars"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Tabs</h2>
+        <label class="check">
+          <input id="showClosed" type="checkbox">
+          Show closed tabs
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Site</th>
+              <th>Title</th>
+              <th>Active</th>
+              <th>Uptime</th>
+              <th>Memory</th>
+              <th>Network</th>
+              <th>Lag</th>
+              <th>Resources</th>
+              <th>Images</th>
+              <th>Streams</th>
+              <th>Cache</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tabsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Sites</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Domain</th>
+              <th>Active</th>
+              <th>Uptime</th>
+              <th>Visits</th>
+              <th>Tabs</th>
+              <th>Last seen</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="domainsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Recent sessions</h2>
+      </div>
+      <div id="sessions" class="sessions"></div>
+    </section>
+  </main>
+
+  <footer class="own">
+    <h3>TrackTab own stats</h3>
+    <div id="ownStats" class="own-grid"></div>
+    <p class="muted small-note">
+      Metrics stay local. Updates are event driven with a 1 minute alarm and a 5 minute resource scan.
+      Per tab memory is the page JS heap when the page exposes it. Browsers do not expose full process
+      memory or per tab CPU to extensions on Windows.
+    </p>
+  </footer>
+
+  <script src="utils.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
