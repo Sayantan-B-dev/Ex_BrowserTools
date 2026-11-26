@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "TrackTab",
+  "version": "1.0.0",
+  "description": "Monitor tab resources, network, uptime, and time spent per site with a local JSON database.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "idle",
+    "scripting",
+    "system.cpu",
+    "system.memory"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "TrackTab"
+  }
+}
