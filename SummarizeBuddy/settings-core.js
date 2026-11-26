@@ -8,7 +8,6 @@
     maxTokens: 1200,
     temperature: 0.3,
     theme: "dark",
-    autoSave: false,
     keys: { adaption: "", openrouter: [], nvidia: "" }
   };
 

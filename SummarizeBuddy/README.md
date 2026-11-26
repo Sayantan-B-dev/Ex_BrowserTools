@@ -13,7 +13,7 @@ questions about it. It is provider-agnostic and uses your own API key.
 - Import your existing `.env` in Settings. OpenRouter keys rotate per request.
 - Floating Settings popup inside the side panel, with a hamburger menu for Settings and All chats.
 - Six themes: Dark, Light, Midnight, Forest, Solarized, Rose.
-- Save chats locally, with an optional auto save toggle. Browse saved chats in All chats by domain, link, and time created.
+- Chats save automatically after every reply and reload automatically when you return to the same link. Browse saved chats in All chats by domain, link, and time created.
 - Download the current chat as a PDF through the print dialog.
 - Export and import all non-secret data (theme, preferences, saved chats) as `MasterMetadata.json`.
 - Auto refresh when the active tab changes or navigates. The manual Reload button is still available.
@@ -105,16 +105,19 @@ Use **Test connection** to send a tiny "Reply with exactly: OK" request with the
 3. Use the bottom rows:
    - Row 1: type a question in the chat bubble and press **Send** (or **Enter**).
    - Row 2: **Summarize page** or **Summarize chat**.
-   - Row 3: **Clear**, **Download PDF**, or **Save locally**.
+   - Row 3: **Clear** or **Download PDF**.
 4. Open the hamburger menu for **Settings** and **All chats**.
 5. The page info and provider status sit directly above the controls.
 
 The chat is page-scoped. When the active tab changes, navigates, or reloads, the panel
-automatically re-reads the page and starts a fresh conversation. **Reload** still re-reads the
-current tab manually.
+automatically re-reads the page. If that link has a saved chat, it loads automatically. Otherwise
+the conversation starts fresh. **Reload** still re-reads the current tab manually.
 
-Settings include themes, auto save, and export/import of `MasterMetadata.json`. All chats are stored
-in `chrome.storage.local` and can be opened or deleted from **All chats**.
+Chats save automatically after each successful reply and reload when you return to the same link.
+**Clear** starts a new conversation for the current link and removes its saved chat. All chats are
+stored in `chrome.storage.local` and can be opened or deleted from **All chats**.
+
+Settings include themes and export/import of `MasterMetadata.json`.
 
 ## How it works
 

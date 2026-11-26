@@ -98,8 +98,8 @@ async function refreshPage(options) {
     const truncated = result.text.length > max;
     page = { ...result, text: result.text.slice(0, max) };
 
-    if (reset || (previousUrl && previousUrl !== page.url)) {
-      resetConversation();
+    if (reset || !previousUrl || previousUrl !== page.url) {
+      await restoreChatForPage();
     }
 
     el("pageTitle").textContent = result.title || result.url;
@@ -321,6 +321,7 @@ function setBusy(value) {
   busy = value;
   el("send").disabled = value;
   el("summarize").disabled = value;
+  el("summarizeChat").disabled = value;
 }
 
 async function send(text) {
@@ -346,15 +347,13 @@ async function send(text) {
     }
     addMessage("assistant", response.content);
     history.push({ role: "assistant", content: response.content, ts: Date.now() });
+    saveCurrentChat().catch(() => {});
   } catch (error) {
     pending.remove();
     addMessage("error", error.message || String(error));
   } finally {
     setBusy(false);
     el("chat").scrollTop = el("chat").scrollHeight;
-    if (settings && settings.autoSave && history.length) {
-      saveCurrentChat({ notify: false }).catch(() => {});
-    }
   }
 }
 
@@ -461,6 +460,60 @@ function chatDomain(url) {
   }
 }
 
+function normalizeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    let value = parsed.toString();
+    if (value.endsWith("/") && parsed.pathname !== "/") value = value.slice(0, -1);
+    return value;
+  } catch {
+    return String(url || "");
+  }
+}
+
+function findChatByUrl(chats, url) {
+  if (!url) return null;
+  const exact = chats.find((chat) => chat.url === url);
+  if (exact) return exact;
+  const target = normalizeUrl(url);
+  return chats.find((chat) => normalizeUrl(chat.url) === target) || null;
+}
+
+function loadChatIntoView(chat) {
+  history = (chat.messages || []).map((message) => ({
+    role: message.role,
+    content: message.content,
+    ts: message.ts
+  }));
+  currentChatId = chat.id;
+  el("chat").innerHTML = "";
+
+  if (!history.length) {
+    showEmpty();
+    return;
+  }
+
+  for (const message of history) {
+    addMessage(message.role === "assistant" ? "assistant" : "user", message.content);
+  }
+}
+
+async function restoreChatForPage() {
+  if (!page) {
+    resetConversation();
+    return;
+  }
+
+  const chats = await getChats();
+  const chat = findChatByUrl(chats, page.url);
+  if (chat) {
+    loadChatIntoView(chat);
+  } else {
+    resetConversation();
+  }
+}
+
 async function getChats() {
   const stored = await chrome.storage.local.get(CHATS_KEY);
   return Array.isArray(stored[CHATS_KEY]) ? stored[CHATS_KEY] : [];
@@ -474,15 +527,16 @@ function newChatId() {
   return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-async function saveCurrentChat(options) {
-  if (!history.length) {
-    showToast("No messages to save yet.");
-    return null;
-  }
+async function saveCurrentChat() {
+  if (!history.length) return null;
 
   const chats = await getChats();
   const now = Date.now();
   let chat = currentChatId ? chats.find((item) => item.id === currentChatId) : null;
+
+  if (!chat && page) {
+    chat = findChatByUrl(chats, page.url);
+  }
 
   if (!chat) {
     chat = {
@@ -495,8 +549,9 @@ async function saveCurrentChat(options) {
       messages: []
     };
     chats.push(chat);
-    currentChatId = chat.id;
   }
+
+  currentChatId = chat.id;
 
   if (page) {
     chat.domain = chatDomain(page.url);
@@ -511,7 +566,6 @@ async function saveCurrentChat(options) {
   }));
 
   await setChats(chats);
-  if (options && options.notify) showToast("Chat saved locally", "ok");
   return chat;
 }
 
@@ -572,8 +626,7 @@ async function renderChats() {
   if (!chats.length) {
     const empty = document.createElement("div");
     empty.className = "chats-empty";
-    empty.textContent =
-      "No saved chats yet. Turn on auto save in Settings, or use Save locally.";
+    empty.textContent = "No saved chats yet. Chats save automatically after a reply.";
     list.appendChild(empty);
     return;
   }
@@ -595,22 +648,7 @@ async function openSavedChat(id) {
   const chat = chats.find((item) => item.id === id);
   if (!chat) return;
 
-  history = (chat.messages || []).map((message) => ({
-    role: message.role,
-    content: message.content,
-    ts: message.ts
-  }));
-  currentChatId = chat.id;
-  el("chat").innerHTML = "";
-
-  if (!history.length) {
-    showEmpty();
-  } else {
-    for (const message of history) {
-      addMessage(message.role === "assistant" ? "assistant" : "user", message.content);
-    }
-  }
-
+  loadChatIntoView(chat);
   closeOverlay("chatsModal");
   showToast("Chat loaded", "ok");
 }
@@ -740,7 +778,18 @@ function resetConversation() {
   showEmpty();
 }
 
-function clearChat() {
+async function clearChat() {
+  const chats = await getChats();
+  let next = chats;
+
+  if (currentChatId) {
+    next = chats.filter((item) => item.id !== currentChatId);
+  } else if (page && page.url) {
+    const chat = findChatByUrl(chats, page.url);
+    if (chat) next = chats.filter((item) => item.id !== chat.id);
+  }
+
+  if (next.length !== chats.length) await setChats(next);
   resetConversation();
 }
 
@@ -767,7 +816,6 @@ function setSettingsStatus(text, kind) {
 function fillSettingsForm() {
   if (!settings) return;
   el("theme").value = settings.theme || SB.DEFAULTS.theme;
-  el("autoSave").checked = Boolean(settings.autoSave);
   el("provider").value = settings.provider || SB.DEFAULTS.provider;
   el("baseUrl").value = settings.baseUrl || "";
   el("model").value = settings.model || "";
@@ -790,7 +838,6 @@ function readSettingsForm() {
   return {
     ...(settings || {}),
     theme: el("theme").value,
-    autoSave: el("autoSave").checked,
     provider: el("provider").value,
     baseUrl: el("baseUrl").value.trim(),
     model: el("model").value.trim(),
@@ -899,6 +946,10 @@ async function openSettings() {
 function scheduleAutoRefresh(delay) {
   clearTimeout(pageChangeTimer);
   pageChangeTimer = setTimeout(() => {
+    if (busy) {
+      scheduleAutoRefresh(1000);
+      return;
+    }
     refreshPage({ reset: true });
   }, delay);
 }
@@ -923,7 +974,6 @@ function init() {
   el("summarizeChat").addEventListener("click", summarizeChat);
   el("clear").addEventListener("click", clearChat);
   el("downloadPdf").addEventListener("click", downloadPdf);
-  el("saveChat").addEventListener("click", () => saveCurrentChat({ notify: true }));
   el("refresh").addEventListener("click", async () => {
     await refreshPage();
     await loadSettings();
@@ -939,11 +989,6 @@ function init() {
     if (!settings) settings = await SB.loadSettings();
     settings.theme = el("theme").value;
     applyTheme();
-    await SB.saveSettings(settings);
-  });
-  el("autoSave").addEventListener("change", async () => {
-    if (!settings) settings = await SB.loadSettings();
-    settings.autoSave = el("autoSave").checked;
     await SB.saveSettings(settings);
   });
   el("exportData").addEventListener("click", () => {
