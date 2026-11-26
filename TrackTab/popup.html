@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrackTab</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="dot" id="statusDot"></span>
+      <span>TrackTab</span>
+    </div>
+    <button id="openDashboard" class="link" type="button">Dashboard</button>
+  </header>
+
+  <main>
+    <section class="toggle-row">
+      <div>
+        <div class="label">Tracking</div>
+        <div class="hint" id="trackingHint">Collecting tab data</div>
+      </div>
+      <label class="switch">
+        <input id="trackToggle" type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </section>
+
+    <section class="stats">
+      <div class="stat">
+        <span class="stat-label">Open tabs</span>
+        <span class="stat-value" id="openTabs">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Active time</span>
+        <span class="stat-value" id="activeTime">0s</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Top site</span>
+        <span class="stat-value small" id="topSite">none</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Sites</span>
+        <span class="stat-value" id="sites">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">System CPU</span>
+        <span class="stat-value" id="cpuUsage">n/a</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Memory</span>
+        <span class="stat-value small" id="memory">n/a</span>
+      </div>
+    </section>
+
+    <button id="openDashboardBig" class="primary" type="button">Open dashboard</button>
+  </main>
+
+  <footer>
+    <span id="lastSync">Local only</span>
+  </footer>
+
+  <script src="utils.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
