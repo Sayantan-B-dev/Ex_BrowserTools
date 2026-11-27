@@ -1,6 +1,6 @@
 # TrackTab
 
-TrackTab is a local Chrome extension that monitors your open tabs and stores the data in a single JSON file that you control.
+TrackTab is a local Chrome extension that monitors your open tabs and stores the data in a single JSON file that you control. It is part of the ReadAssistent workspace; see [the workspace README](../README.md) for the other extensions.
 
 It tracks per tab uptime, active time, resource counts, page JS heap, network type, and storage usage. It also tracks per site totals, visit counts, recent sessions, and system wide CPU and memory.
 
@@ -53,6 +53,21 @@ Other database actions:
 
 If Chrome asks for permission again, click Reconnect.
 
+## Browser support
+
+File sync uses the File System Access API, which Brave and some Chromium forks do not expose. The
+dashboard checks for it at startup and switches to a browser storage mode instead of showing an
+error:
+
+- The Link file, Reconnect, Reload from file, and Unlink buttons are hidden.
+- Open file becomes Load backup and opens the normal file picker to merge a saved copy.
+- Save now becomes Download copy and downloads the current database from browser storage.
+- The status line explains that auto sync to a file is unavailable.
+
+Tracking, history, and the dashboard keep working in this mode. Back up with Download copy and
+restore with Load backup, or use Export JSON and Import JSON. Chrome and other Chromium browsers
+with the File System Access API keep the full linked-file behavior.
+
 The file is plain JSON with a version, timestamps, settings, a `tabs` map, a `domains` map, a `sessions` array, system stats, and extension stats.
 
 ## Metric limits
@@ -82,5 +97,5 @@ Updates are event driven. A 1 minute alarm advances uptime and active time. A 5 
 - `manifest.json`: extension manifest.
 - `background.js`: tracking state, alarms, metric collection, and message handling.
 - `popup.html`, `popup.css`, `popup.js`: quick view and on/off switch.
-- `dashboard.html`, `dashboard.css`, `dashboard.js`: full dashboard and file database sync.
+- `dashboard.html`, `dashboard.css`, `dashboard.js`: full dashboard, file database sync, and the browser storage fallback.
 - `utils.js`: shared formatting helpers.

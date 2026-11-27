@@ -1,48 +1,57 @@
 # ReadAssistent workspace
 
-A small workspace containing **SummarizeBuddy**, a Chrome extension that summarizes the page you
-are reading and lets you chat about it using your own AI provider API key.
+A small workspace of local-first Chrome extensions. Each extension lives in its own folder and has
+its own detailed README covering install steps, settings, usage, limits, and troubleshooting.
 
-## Contents
+## Projects
+
+| Project | Folder | What it does |
+| --- | --- | --- |
+| SummarizeBuddy | [`SummarizeBuddy/`](SummarizeBuddy/README.md) | Summarizes the page you are reading and lets you chat about it with your own AI provider key. |
+| TrackTab | [`TrackTab/`](TrackTab/README.md) | Tracks what you do in the browser: per tab uptime, active time, resources, sites, sessions, and system stats. |
+
+Use this file to find a project. Open the project's own README for full detail.
+
+## Repository layout
 
 ```
 ReadAssistent/
 ├── .env                  # your real keys (git-ignored, never commit)
-├── README.md             # this file
-└── SummarizeBuddy/       # the Chrome extension (load this folder unpacked)
-    ├── .env.example      # template showing the supported variables
-    ├── manifest.json
-    ├── background.js
-    ├── settings-core.js
-    ├── sidepanel.html / .css / .js
-    ├── options.html / .css / .js
-    └── README.md         # detailed setup and usage guide
+├── README.md             # this workspace overview
+├── List.md               # short project list
+├── commit.js             # helper that replays the work as small commits
+├── SummarizeBuddy/       # AI page summarizer side panel extension
+│   ├── README.md         # detailed setup and usage guide
+│   └── manifest.json ... # extension source
+└── TrackTab/             # browser activity tracker and dashboard extension
+    ├── README.md         # detailed setup and metric guide
+    └── manifest.json ... # extension source
 ```
 
-## Quick start
+## Install an extension
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** and select the `SummarizeBuddy` folder.
-3. Open the extension's **Settings**, then either paste your `.env` contents or import the file.
-4. Click the SummarizeBuddy toolbar icon to open the side panel on any article.
-5. Press **Summarize page**, or ask a question about the page.
+Both extensions install the same way:
 
-Full instructions live in [`SummarizeBuddy/README.md`](SummarizeBuddy/README.md).
+1. Open `chrome://extensions` and turn on **Developer mode**.
+2. Click **Load unpacked** and select the extension folder (`SummarizeBuddy` or `TrackTab`).
+3. Pin the extension to the toolbar.
+4. Follow that folder's README to finish setup.
 
-## Supported providers
+After editing extension files, reload the extension from `chrome://extensions`.
 
-The extension speaks the OpenAI-compatible chat completions API, so it works with:
+## Browser support
 
-- **Adaption** (`ADAPTION_API_KEY`, `ADAPTION_BASE_URL`, `ADAPTION_MODEL`)
-- **OpenRouter** (`OPENROUTER_API_KEY_1..N`, rotated per request)
-- **NVIDIA NIM** (`NVIDIA_API_KEY`, `NVIDIA_MODEL`)
-- **Any custom OpenAI-compatible endpoint** (set base URL and model in Settings)
+The extensions target Chromium browsers. Brave and other Chromium forks work, with one difference:
+Brave does not expose the File System Access API, so TrackTab cannot auto-sync to a file there. It
+falls back to browser storage with manual backup and restore. See
+[`TrackTab/README.md`](TrackTab/README.md#browser-support).
 
 ## Security
 
-- Real API keys are **not** stored in the extension source. They are read from your `.env` at setup
-  time and saved to `chrome.storage.local` in your browser profile.
+- Real API keys are not stored in extension source. They are read from your `.env` at setup time and
+  saved to `chrome.storage.local` in your browser profile.
 - `.env` is listed in `.gitignore`; keep it out of version control and never paste real keys into
   shared files or screenshots.
 - Requests go directly from your browser to the provider you configure. There is no intermediary
   server.
+- TrackTab keeps all tracking data on your device and makes no network requests.
