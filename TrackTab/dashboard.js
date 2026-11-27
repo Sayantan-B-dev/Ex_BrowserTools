@@ -38,6 +38,10 @@ const COLORS = [
   "#14b8a6"
 ];
 
+const fsSupported =
+  typeof window.showSaveFilePicker === "function" &&
+  typeof window.showOpenFilePicker === "function";
+
 const IDB_NAME = "tracktab_db";
 const IDB_STORE = "handles";
 const IDB_KEY = "db";
@@ -707,8 +711,8 @@ async function autoSync() {
 }
 
 async function linkFile() {
-  if (!window.showSaveFilePicker) {
-    setDbStatus("File System Access API is not available in this browser.", "error");
+  if (!fsSupported) {
+    setDbStatus("Auto sync to a file needs the File System Access API. Use Download copy instead.", "warn");
     return;
   }
 
@@ -739,8 +743,8 @@ async function linkFile() {
 }
 
 async function openExistingFile() {
-  if (!window.showOpenFilePicker) {
-    setDbStatus("File System Access API is not available in this browser.", "error");
+  if (!fsSupported) {
+    els.importInput.click();
     return;
   }
 
@@ -857,6 +861,14 @@ async function clearAll() {
 }
 
 async function loadStoredHandle() {
+  if (!fsSupported) {
+    setDbStatus(
+      "Browser storage only. This browser blocks auto sync to a file, so use Download copy to back up and Import JSON to restore.",
+      "warn"
+    );
+    return;
+  }
+
   try {
     fileHandle = await idbGet(IDB_KEY);
   } catch {
@@ -924,6 +936,11 @@ els.openFileBtn.addEventListener("click", openExistingFile);
 els.reconnectBtn.addEventListener("click", reconnectFile);
 els.reloadBtn.addEventListener("click", reloadFromFile);
 els.saveBtn.addEventListener("click", async () => {
+  if (!fsSupported) {
+    exportJson();
+    setDbStatus("Downloaded a database copy from browser storage.", "ok");
+    return;
+  }
   const saved = await writeStateToFile();
   if (saved && fileHandle) setDbStatus("Saved to " + fileHandle.name, "ok");
 });
@@ -945,7 +962,18 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+function applyBrowserFallback() {
+  if (fsSupported) return;
+  els.linkBtn.classList.add("hidden");
+  els.reconnectBtn.classList.add("hidden");
+  els.reloadBtn.classList.add("hidden");
+  els.unlinkBtn.classList.add("hidden");
+  els.openFileBtn.textContent = "Load backup";
+  els.saveBtn.textContent = "Download copy";
+}
+
 async function boot() {
+  applyBrowserFallback();
   await refreshState();
   await loadStoredHandle();
 
